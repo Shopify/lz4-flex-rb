@@ -1,0 +1,12 @@
+dependencies:
+  bundler:
+    without:
+      - test
+
+deploy:
+  override:
+    - buildkite-trigger lz4-flex-rb-publish-package
+
+ci:
+  require:
+    - buildkite/lz4-flex-rb

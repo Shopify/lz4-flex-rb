@@ -1,0 +1,41 @@
+name: lz4-flex-rb
+
+type: ruby
+
+up:
+  - ruby
+  - bundler
+
+commands:
+  console:
+    desc: Open console with the gem loaded
+    run: bin/console
+  build:
+    desc: Build the gem using rake build
+    run: bin/rake build
+  test:
+    desc: Run tests
+    syntax:
+      argument: file
+      optional: args...
+    run:  |
+      if [[ $# -eq 0 ]]; then
+        bin/rake test
+      else
+        bin/rake -I test "$@"
+      fi
+  style:
+    desc: Run rubocop
+    aliases: [rubocop, lint]
+    run: bin/rubocop
+  typecheck:
+    desc: 'Run Sorbet type checking'
+    aliases: [tc]
+    run: srb tc
+  rbi-update:
+    desc: Generate Ruby interface files for Sorbet
+    aliases: [update-rbis]
+    run: |
+      bin/tapioca gem &&
+      bin/spoom bump --from false --to true &&
+      bin/spoom bump --from true --to strict

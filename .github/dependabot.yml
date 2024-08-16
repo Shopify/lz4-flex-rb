@@ -1,0 +1,24 @@
+version: 2
+registries:
+  # The github-com registry configuration below is only used for the Shopify GitHub org. 
+  # Remove this registry for the ShopifyUS and ShopifyFRS orgs to unblock Dependabot updates.
+  github-com:
+    type: git
+    url: https://github.com
+    username: ${{secrets.DEPENDENCIES_GITHUB_USER}}
+    password: ${{secrets.DEPENDENCIES_GITHUB_TOKEN}}
+  rubygems-server-pkgs-shopify-io:
+    type: rubygems-server
+    url: https://pkgs.shopify.io/basic/gems/ruby
+    username: ${{secrets.RUBYGEMS_SERVER_PKGS_SHOPIFY_IO_USERNAME}}
+    password: ${{secrets.RUBYGEMS_SERVER_PKGS_SHOPIFY_IO_PASSWORD}}
+
+updates:
+  - package-ecosystem: bundler
+    directory: "/"
+    schedule:
+      interval: weekly
+    # Set open-pull-requests-limit to a value > 0 to enable Dependabot
+    open-pull-requests-limit: 0
+    insecure-external-code-execution: allow
+    registries: "*"
