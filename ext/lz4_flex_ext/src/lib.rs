@@ -11,6 +11,7 @@ use magnus::{
     value::{InnerValue, Lazy},
     Error, ExceptionClass, RModule, RString, Ruby,
 };
+use rb_sys::ruby_abi_version;
 
 #[repr(C)]
 struct Header {
@@ -125,6 +126,8 @@ static DECODE_ERROR_CLASS: Lazy<ExceptionClass> = Lazy::new(|ruby| {
         .define_error("DecodeError", BASE_ERROR_CLASS.get_inner_with(ruby))
         .unwrap()
 });
+
+ruby_abi_version!();
 
 #[magnus::init]
 fn init(ruby: &Ruby) -> Result<(), Error> {
