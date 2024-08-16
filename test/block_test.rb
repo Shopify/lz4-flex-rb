@@ -26,4 +26,9 @@ class BlockTest < Minitest::Test
       assert_equal(encoding, decompressed.encoding)
     end
   end
+
+  def test_decompress_fail
+    compressed = Lz4Flex.compress("foobarbaz")
+    assert_raises(Lz4Flex::DecodeError) { Lz4Flex.decompress(compressed[0..8]) }
+  end
 end

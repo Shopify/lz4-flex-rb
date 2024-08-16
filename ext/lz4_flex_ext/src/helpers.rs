@@ -7,8 +7,9 @@ use std::{
 
 use magnus::{
     encoding::{EncodingCapable, Index},
+    exception::type_error,
     rb_sys::AsRawValue,
-    value::InnerValue,
+    value::ReprValue,
     Error, RString, Ruby, TryConvert, Value,
 };
 use rb_sys::{
@@ -16,7 +17,7 @@ use rb_sys::{
     RSTRING_LEN, RSTRING_PTR,
 };
 
-use crate::BASE_ERROR_CLASS;
+use crate::base_error_class;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -39,11 +40,11 @@ impl Encoding {
 
     pub(crate) fn from_u8(value: u8) -> Result<Self, Error> {
         match value {
-            0b00 => Ok(Self::Utf8),
-            0b01 => Ok(Self::Binary),
-            0b10 => Ok(Self::UsAscii),
+            0 => Ok(Self::Utf8),
+            1 => Ok(Self::Binary),
+            2 => Ok(Self::UsAscii),
             _ => Err(Error::new(
-                BASE_ERROR_CLASS.get_inner_with(&unsafe { Ruby::get_unchecked() }),
+                base_error_class(),
                 "unsupported encoding for string, please use Lz4Flex.compress_block instead"
                     .to_owned(),
             )),
@@ -72,7 +73,7 @@ impl TryFrom<RString> for Encoding {
         }
 
         Err(Error::new(
-            BASE_ERROR_CLASS.get_inner_with(&ruby),
+            base_error_class(),
             "unsupported encoding for string, please use Lz4Flex.compress_block instead".to_owned(),
         ))
     }
@@ -111,7 +112,11 @@ impl Drop for LockedRString<'_> {
 
 impl TryConvert for LockedRString<'_> {
     fn try_convert(val: Value) -> Result<Self, magnus::Error> {
-        TryConvert::try_convert(val).map(Self::new)
+        let rstring: RString = RString::from_value(val).ok_or(magnus::Error::new(
+            type_error(),
+            format!("expected String, got {}", val.class()),
+        ))?;
+        Ok(Self::new(rstring))
     }
 }
 
