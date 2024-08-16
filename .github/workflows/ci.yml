@@ -1,0 +1,57 @@
+---
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest", "macos-latest"]
+        ruby: ["3.1", "3.2", "3.3", "ruby-head"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oxidize-rb/actions/setup-ruby-and-rust@v1
+        with:
+          rustup-toolchain: "1.80.1"
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+          cargo-cache: true
+          cache-version: v1
+
+      - name: Compile
+        run: bundle exec rake compile:dev
+
+      - name: Run ruby tests
+        run: bin/test --reporter spec
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oxidize-rb/actions/setup-ruby-and-rust@v1
+        with:
+          rustup-toolchain: "1.80.1"
+          ruby-version: "3.3"
+          bundler-cache: true
+          cargo-cache: true
+          cache-version: v1
+
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Cargo
+        run: cargo fmt --check
+
+      - name: Rubocop
+        run: bundle exec rake rubocop
