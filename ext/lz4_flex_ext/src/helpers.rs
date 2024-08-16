@@ -5,14 +5,81 @@ use std::{
     ptr::null_mut,
 };
 
-use magnus::{rb_sys::AsRawValue, RString, TryConvert, Value};
+use magnus::{
+    encoding::{EncodingCapable, Index},
+    rb_sys::AsRawValue,
+    value::InnerValue,
+    Error, RString, Ruby, TryConvert, Value,
+};
 use rb_sys::{
     rb_gc_guard, rb_str_locktmp, rb_str_resize, rb_str_unlocktmp, rb_thread_call_without_gvl,
     RSTRING_LEN, RSTRING_PTR,
 };
 
+use crate::BASE_ERROR_CLASS;
+
+#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+pub(crate) enum Encoding {
+    Utf8 = 0,
+    Binary = 1,
+    UsAscii = 2,
+}
+
+impl Encoding {
+    pub(crate) fn encindex(self) -> Index {
+        let ruby = unsafe { Ruby::get_unchecked() };
+
+        match self {
+            Self::Utf8 => ruby.utf8_encindex(),
+            Self::Binary => ruby.ascii8bit_encindex(),
+            Self::UsAscii => ruby.usascii_encindex(),
+        }
+    }
+
+    pub(crate) fn from_u8(value: u8) -> Result<Self, Error> {
+        match value {
+            0b00 => Ok(Self::Utf8),
+            0b01 => Ok(Self::Binary),
+            0b10 => Ok(Self::UsAscii),
+            _ => Err(Error::new(
+                BASE_ERROR_CLASS.get_inner_with(&unsafe { Ruby::get_unchecked() }),
+                "unsupported encoding for string, please use Lz4Flex.compress_block instead"
+                    .to_owned(),
+            )),
+        }
+    }
+}
+
+impl TryFrom<RString> for Encoding {
+    type Error = Error;
+
+    fn try_from(string: RString) -> Result<Self, Self::Error> {
+        let ruby = unsafe { Ruby::get_unchecked() };
+
+        let enc = string.enc_get();
+
+        if enc == ruby.utf8_encindex() {
+            return Ok(Encoding::Utf8);
+        }
+
+        if enc == ruby.ascii8bit_encindex() {
+            return Ok(Encoding::Binary);
+        }
+
+        if enc == ruby.usascii_encindex() {
+            return Ok(Encoding::UsAscii);
+        }
+
+        Err(Error::new(
+            BASE_ERROR_CLASS.get_inner_with(&ruby),
+            "unsupported encoding for string, please use Lz4Flex.compress_block instead".to_owned(),
+        ))
+    }
+}
+
 #[derive(Debug)]
-pub struct LockedRString<'a>(RString, PhantomData<&'a ()>);
+pub struct LockedRString<'a>(pub(crate) RString, PhantomData<&'a ()>);
 
 impl<'a> LockedRString<'a> {
     fn new(string: RString) -> Self {
@@ -29,6 +96,10 @@ impl<'a> LockedRString<'a> {
 
     pub(crate) fn len(&self) -> usize {
         self.0.len()
+    }
+
+    pub(crate) fn encoding(&self) -> Result<Encoding, Error> {
+        Encoding::try_from(self.0)
     }
 }
 

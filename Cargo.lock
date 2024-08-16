@@ -128,6 +128,7 @@ dependencies = [
  "lz4_flex",
  "magnus",
  "rb-sys",
+ "static_assertions",
 ]
 
 [[package]]

@@ -16,13 +16,14 @@ class BlockTest < Minitest::Test
     define_method("test_roundtrip_compress_#{file_slug}") do
       next if File.directory?(f)
 
-      input = File.binread(f)
+      input = rand(10) == 1 ? File.binread(f) : File.read(f)
+      encoding = input.encoding
+      compressed = with_gc_stress { Lz4Flex.compress(input) }
+      decompressed = with_gc_stress { Lz4Flex.decompress(compressed) }
 
-      compressed = with_gc_stress { Lz4Flex.compress_block(input) }
-      assert_equal(input, with_gc_stress { Lz4Flex.decompress_block(compressed) })
-    rescue => e
-      e.message << " in file #{f}"
-      raise
+      assert_equal(Encoding::BINARY, compressed.encoding)
+      assert_equal(input, decompressed)
+      assert_equal(encoding, decompressed.encoding)
     end
   end
 end

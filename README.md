@@ -35,6 +35,10 @@ If you encounter issues during installation, ensure that Rust is correctly insta
 
 ## How to use this library
 
+There are two methods provided, `LZ4Flex.compress` and `Lz4Flex.decompress`.
+Both of these methods utilize the lz4 block format, with a custom 64 bit header
+to keep track of the string's size and encoding. 
+
 ### Basic Usage
 
 ```ruby
@@ -48,6 +52,24 @@ decompressed = LZ4Flex.decompress(compressed)
 
 puts decompressed  # => "Hello, World!"
 ```
+
+The header used in these methods will  not be recognizable from other lz4 block
+parsers. If you need that, it's best to use the Frame API (which is currently a
+WIP).
+
+
+#### Header spec
+
+The below describes the u64-sized header structure with its fields, in order:
+
+
+- `version`: u8 (version of header format, expected value: 1)
+- `encoding`: u8 (encoding of the string)
+  - Utf8 = 0
+  - Binary = 1
+  - UsAscii = 2,
+- `__reserved`: [u8; 2] (initialized to zero, reserved for later use in case needed)
+- `content_sizes`: u32 (size of the content string)
 
 ### Running Tests
 To run the tests, execute:
