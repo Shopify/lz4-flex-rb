@@ -1,8 +1,10 @@
 # typed: strict
 # frozen_string_literal: true
 
-require_relative "lz4_flex/version"
-require_relative "lz4_flex/lz4_flex_ext"
-
-module Lz4Flex
+# Tries to require the precompiled extension for the given Ruby version first
+begin
+  RUBY_VERSION =~ /(\d+\.\d+)/
+  require "lz4_flex/#{Regexp.last_match(1)}/lz4_flex_ext"
+rescue LoadError
+  require_relative "lz4_flex/lz4_flex_ext"
 end

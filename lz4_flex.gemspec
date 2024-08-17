@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
   spec.license = "MIT"
 
   spec.homepage = "https://github.com/Shopify/lz4-flex-rb"
-  spec.required_ruby_version = ">= 3.1"
+  spec.required_ruby_version = ">= 3.2"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
 

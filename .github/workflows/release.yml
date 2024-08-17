@@ -76,7 +76,7 @@
           id: cross-gem
           with:
             platform: ${{ matrix.platform }}
-            ruby-versions: "3.3"
+            ruby-versions: "3.2,3.3"
           
         - uses: actions/upload-artifact@v3
           with:
@@ -88,7 +88,7 @@
       needs: cross-gem
       strategy:
         matrix:
-          os: ["ubuntu-latest", "macos-latest", "windows-latest"]
+          os: ["ubuntu-latest", "macos-latest"]
       steps:
         - uses: actions/checkout@v4
 
@@ -132,13 +132,16 @@
             script: |
               const fs = require("fs");
               const path = require("path");
+              const refIncludesPre = 
 
               const release = await github.rest.repos.createRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 tag_name: "${{ github.ref }}",
                 name: "${{ github.ref_name }}",
-                generate_release_notes: true
+                generate_release_notes: true,
+                prerelease: "${{ github.ref_name }}".includes(".pre");
+                draft: true
               });
 
               const globber =  await glob.create("pkg/*.gem");
