@@ -18,7 +18,7 @@
           id: fetch
           with:
             supported-ruby-platforms: |
-              exclude: ["arm-linux", "x64-mingw32"]
+              exclude: ["arm-linux", "x64-mingw32", "x64-mingw-ucrt"]
     source-gem:
       runs-on: ubuntu-latest
       steps:
