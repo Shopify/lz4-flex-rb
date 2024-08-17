@@ -12,6 +12,7 @@ gem "rubocop-shopify", require: false
 gem "rake-compiler"
 gem "rb_sys", "~> 0.9.100"
 gem "nicetest"
+gem "lz4-ruby"
 
 # Specify any Shopify private dependencies (development or runtime in this block)
 source "https://pkgs.shopify.io/basic/gems/ruby" do

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "lz4-ruby"
 
 class BlockTest < Minitest::Test
   parallelize_me!
@@ -30,5 +31,19 @@ class BlockTest < Minitest::Test
   def test_decompress_fail
     compressed = Lz4Flex.compress("foobarbaz")
     assert_raises(Lz4Flex::DecodeError) { Lz4Flex.decompress(compressed[0..8]) }
+  end
+
+  class VarIntTest < Minitest::Test
+    def test_lz4_ruby_compatibility_decompress
+      input = Random.bytes(1024)
+      compressed = LZ4.compress(input)
+      assert_equal(input, Lz4Flex::VarInt.decompress(compressed))
+    end
+
+    def test_lz4_ruby_compatibility_compress
+      input = Random.bytes(1024)
+      compressed = Lz4Flex::VarInt.compress(input)
+      assert_equal(input, LZ4.decompress(compressed))
+    end
   end
 end

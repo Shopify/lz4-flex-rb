@@ -18,6 +18,7 @@ GEM
     diff-lcs (1.5.1)
     json (2.7.2)
     language_server-protocol (3.17.0.3)
+    lz4-ruby (0.3.3)
     minitest (5.25.1)
     minitest-focus (1.4.0)
       minitest (>= 4, < 6)
@@ -84,6 +85,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  lz4-ruby
   lz4_flex!
   minitest (~> 5.0)
   nicetest

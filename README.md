@@ -20,7 +20,7 @@ servers, enhancing concurrency and performance in multi-threaded environments.
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'lz4_flex', github: "Shopify/lz4-flex-rb"
+gem 'lz4_flex'
 ```
 
 And then execute:
@@ -36,8 +36,8 @@ If you encounter issues during installation, ensure that Rust is correctly insta
 ## How to use this library
 
 There are two methods provided, `LZ4Flex.compress` and `Lz4Flex.decompress`.
-Both of these methods utilize the lz4 block format, with a custom 64 bit header
-to keep track of the string's size and encoding. 
+Both of these methods utilize the lz4 block format, with a small header to
+record the string's size and encoding.
 
 ### Basic Usage
 
@@ -51,25 +51,34 @@ compressed = LZ4Flex.compress("Hello, World!")
 decompressed = LZ4Flex.decompress(compressed)
 
 puts decompressed  # => "Hello, World!"
+puts decompressed.encoding # => Encoding::UTF_8
 ```
 
-The header used in these methods will  not be recognizable from other lz4 block
+The header used in these methods will not be recognizable from other lz4 block
 parsers. If you need that, it's best to use the Frame API (which is currently a
 WIP).
 
+### Migrating from `lz4-ruby`
 
-#### Header spec
+The [`lz4-ruby`](https://github.com/komiya-atsushi/lz4-ruby) gem uses a slighty
+different header format, which keeps track of string size but not the string's
+encoding.
 
-The below describes the u64-sized header structure with its fields, in order:
+To make it easy to migrate to `lz4_flex`, we provide a parser for the
+`lz4-ruby` format:
 
+```ruby
+# Say you have a string that was compressed with lz4-ruby...
+lz4_ruby_compressed = LZ4.compress("Yo!")
 
-- `version`: u8 (version of header format, expected value: 1)
-- `encoding`: u8 (encoding of the string)
-  - Utf8 = 0
-  - Binary = 1
-  - UsAscii = 2,
-- `__reserved`: [u8; 2] (initialized to zero, reserved for later use in case needed)
-- `content_sizes`: u32 (size of the content string)
+# You can decode it with lz4_flex:
+decompressed = Lz4Flex::VarInt.decompress(lz4_ruby_compressed)
+
+puts decompressed #=> "Yo!"
+puts decompressed.encoding #=> Encoding::BINARY
+```
+
+Combine
 
 ### Running Tests
 To run the tests, execute:

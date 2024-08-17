@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use std::{
     cell::Cell,
     ffi::c_void,
     marker::PhantomData,
-    mem::{transmute, MaybeUninit},
+    mem::MaybeUninit,
     ptr::null_mut,
 };
 
@@ -20,7 +21,7 @@ use rb_sys::{
 
 use crate::base_error_class;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[repr(u8)]
 pub(crate) enum Encoding {
     Utf8 = 0,
@@ -39,16 +40,12 @@ impl Encoding {
         }
     }
 
-    pub(crate) fn from_u8(value: u8) -> Result<Self, Error> {
+    pub(crate) const fn from_u8(value: u8) -> Self {
         match value {
-            0 => Ok(Self::Utf8),
-            1 => Ok(Self::Binary),
-            2 => Ok(Self::UsAscii),
-            _ => Err(Error::new(
-                base_error_class(),
-                "unsupported encoding for string, please use Lz4Flex.compress_block instead"
-                    .to_owned(),
-            )),
+            0 => Self::Utf8,
+            1 => Self::Binary,
+            2 => Self::UsAscii,
+            _ => unreachable!(),
         }
     }
 }
@@ -84,16 +81,16 @@ impl TryFrom<RString> for Encoding {
 pub struct LockedRString<'a>(pub(crate) RString, PhantomData<&'a ()>);
 
 impl<'a> LockedRString<'a> {
-    fn new(string: RString) -> Self {
+    pub(crate) fn new(string: RString) -> Self {
         unsafe { rb_str_locktmp(string.as_raw()) };
 
         Self(string, PhantomData)
     }
 
     pub(crate) fn as_slice(&self) -> &'a [u8] {
-        // Safety: The string is locked, so it's safe to transmute it to a slice, but we want the
-        // slice to match the lifetime of the LockedRString.
-        unsafe { transmute(self.0.as_slice()) }
+        unsafe {
+            std::slice::from_raw_parts(RSTRING_PTR(self.0.as_raw()) as *const u8, self.0.len())
+        }
     }
 
     pub(crate) fn len(&self) -> usize {
