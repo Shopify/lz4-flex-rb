@@ -19,8 +19,6 @@
           with:
             supported-ruby-platforms: |
               exclude: ["arm-linux", "x64-mingw32"]
-            stable-ruby-versions: |
-              exclude: ["3.0", "3.1", "3.2", "3.3", "head"]
     source-gem:
       runs-on: ubuntu-latest
       steps:
@@ -78,8 +76,8 @@
           id: cross-gem
           with:
             platform: ${{ matrix.platform }}
-            ruby-versions: ${{ join(fromJSON(needs.ci-data.outputs.result).stable-ruby-versions, ',') }}
-
+            ruby-versions: "3.3"
+          
         - uses: actions/upload-artifact@v3
           with:
             name: cross-gem
