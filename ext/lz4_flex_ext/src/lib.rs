@@ -23,16 +23,18 @@ fn compress(input: LockedRString) -> Result<RString, Error> {
     let encoding = input.encoding()?;
     let bufsize = get_maximum_output_size(input.len()) + size_of::<Header>(); // +8 for prepended size
     let mut output = RStringMut::buf_new(bufsize);
-    output.resize(bufsize);
+    output.expand(bufsize);
 
     let outbuf = output.as_mut_slice();
     let header = Header::new(input_len as u32, encoding);
     let outbuf = header.write_to(outbuf);
 
-    let outsize = nogvl_if_large(output.len(), || compress_into(input.as_slice(), outbuf))
-        .map_err(|e| Error::new(encode_error_class(), e.to_string()))?;
+    let outsize = nogvl_if_large(output.capacity(), || {
+        compress_into(input.as_slice(), outbuf)
+    })
+    .map_err(|e| Error::new(encode_error_class(), e.to_string()))?;
 
-    output.resize(outsize + 8);
+    output.set_len(outsize + size_of::<Header>());
     Ok(output.into_inner())
 }
 
@@ -40,13 +42,14 @@ fn decompress(input: LockedRString) -> Result<RString, Error> {
     let input_slice = input.as_slice();
     let (header, input_slice) = Header::from_bytes(input_slice)?;
     let mut output = RStringMut::buf_new(header.size as usize);
-    output.resize(header.size as usize);
+    output.expand(header.size as usize);
 
-    nogvl_if_large(output.len(), || {
+    nogvl_if_large(output.capacity(), || {
         decompress_into(input_slice, output.as_mut_slice())
     })
     .map_err(|e| Error::new(decode_error_class(), e.to_string()))?;
 
+    output.set_len(header.size as usize);
     let output = output.into_inner();
     output.enc_set(header.encoding.encindex())?;
 

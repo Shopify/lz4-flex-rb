@@ -1,4 +1,5 @@
 use std::{
+    cell::Cell,
     ffi::c_void,
     marker::PhantomData,
     mem::{transmute, MaybeUninit},
@@ -13,8 +14,8 @@ use magnus::{
     Error, RString, Ruby, TryConvert, Value,
 };
 use rb_sys::{
-    rb_gc_guard, rb_str_locktmp, rb_str_resize, rb_str_unlocktmp, rb_thread_call_without_gvl,
-    RSTRING_LEN, RSTRING_PTR,
+    rb_gc_guard, rb_str_locktmp, rb_str_modify_expand, rb_str_set_len, rb_str_unlocktmp,
+    rb_thread_call_without_gvl, RSTRING_PTR,
 };
 
 use crate::base_error_class;
@@ -107,6 +108,8 @@ impl<'a> LockedRString<'a> {
 impl Drop for LockedRString<'_> {
     fn drop(&mut self) {
         unsafe { rb_str_unlocktmp(self.0.as_raw()) };
+        // Keep the value alive while we hold this RString
+        let _ = rb_gc_guard!(self.0.as_raw());
     }
 }
 
@@ -121,42 +124,57 @@ impl TryConvert for LockedRString<'_> {
 }
 
 #[derive(Debug)]
-pub struct RStringMut<'a>(RString, PhantomData<&'a ()>);
+pub struct RStringMut<'a> {
+    inner: RString,
+    capa: Cell<usize>,
+    // Used to safely borrow the underlying rstring buffer by associating it with the lifetime of
+    // the RStringMut
+    _lifetime: PhantomData<&'a ()>,
+}
 
 impl<'a> RStringMut<'a> {
     pub(crate) fn buf_new(size: usize) -> Self {
         let string = RString::buf_new(size);
-        Self(string, PhantomData)
-    }
-
-    pub(crate) fn as_mut_slice(&mut self) -> &'a mut [u8] {
-        let raw_value = self.0.as_raw();
-
-        unsafe {
-            std::slice::from_raw_parts_mut(
-                RSTRING_PTR(raw_value) as *mut u8,
-                RSTRING_LEN(raw_value) as _,
-            )
+        Self {
+            inner: string,
+            capa: Cell::new(size),
+            _lifetime: PhantomData,
         }
     }
 
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
+    pub(crate) fn as_mut_slice(&mut self) -> &'a mut [u8] {
+        let raw_value = self.inner.as_raw();
+
+        unsafe {
+            std::slice::from_raw_parts_mut(RSTRING_PTR(raw_value) as *mut u8, self.capa.get())
+        }
     }
 
-    pub(crate) fn resize(&self, size: usize) {
-        unsafe { rb_str_resize(self.0.as_raw(), size as _) };
+    pub(crate) fn capacity(&self) -> usize {
+        self.capa.get()
+    }
+
+    pub(crate) fn expand(&self, size: usize) {
+        if size <= self.capacity() {
+            return;
+        }
+
+        unsafe { rb_str_modify_expand(self.inner.as_raw(), size as _) };
+    }
+
+    pub(crate) fn set_len(&self, len: usize) {
+        unsafe { rb_str_set_len(self.inner.as_raw(), len as _) }
     }
 
     pub(crate) fn into_inner(self) -> RString {
-        self.0
+        self.inner
     }
 }
 
 impl Drop for RStringMut<'_> {
     fn drop(&mut self) {
         // Keep the value alive while we hold this RString
-        let _ = rb_gc_guard!(self.0.as_raw());
+        let _ = rb_gc_guard!(self.inner.as_raw());
     }
 }
 
