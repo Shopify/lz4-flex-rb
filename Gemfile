@@ -2,18 +2,13 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's runtime dependencies in the gemspec
 gemspec
 
-# Specify development dependencies here
-gem "rake", "~> 13.0"
+gem "rake", "~> 13.0", require: false
 gem "minitest", "~> 5.0", require: false
 gem "rubocop-shopify", require: false
-gem "rake-compiler"
-gem "rb_sys", "~> 0.9.100"
-gem "nicetest"
-gem "lz4-ruby"
-
-# Specify any Shopify private dependencies (development or runtime in this block)
-source "https://pkgs.shopify.io/basic/gems/ruby" do
-end
+gem "rake-compiler", require: false
+gem "rb_sys", "~> 0.9.100", require: false
+gem "nicetest", require: false
+gem "lz4-ruby", require: false
+gem "benchmark-ips", require: false

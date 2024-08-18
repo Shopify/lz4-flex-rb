@@ -5,15 +5,12 @@ PATH
       rb_sys (~> 0.9.101)
 
 GEM
-  remote: https://pkgs.shopify.io/basic/gems/ruby/
-  specs:
-
-GEM
   remote: https://rubygems.org/
   specs:
     ansi (1.5.0)
     ast (2.4.2)
     attr_extras (7.1.0)
+    benchmark-ips (2.13.0)
     builder (3.3.0)
     diff-lcs (1.5.1)
     json (2.7.2)
@@ -85,6 +82,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  benchmark-ips
   lz4-ruby
   lz4_flex!
   minitest (~> 5.0)
