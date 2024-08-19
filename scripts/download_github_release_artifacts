@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+repo="$1"
+tag="$2"
+
+github_request() {
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" "$@"
+  else
+    curl -s "$@"
+  fi
+}
+
+release_id="$(github_request "https://api.github.com/repos/$repo/releases/tags/$tag" | jq -r .id)"
+assets="$(github_request "https://api.github.com/repos/$repo/releases/$release_id/assets" | jq -c '.[]')"
+
+echo "Downloading artifacts from $repo#$tag (release_id=$release_id)"
+
+for asset in $(echo "${assets}" | jq -r '. | @base64'); do
+  _jq() {
+    echo ${asset} | base64 --decode | jq -r ${1}
+  }
+
+  url=$(_jq '.browser_download_url')
+  name=$(_jq '.name')
+  mkdir -p pkg
+  echo "Saving artifact to pkg/${name}..."
+  github_request -Lo "pkg/${name}" "${url}"
+done
+
+echo "Done!"
