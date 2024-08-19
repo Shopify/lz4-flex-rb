@@ -1,33 +1,73 @@
-#!/usr/bin/env bash
+#!/usr/bin/env ruby
+# frozen_string_literal: true
 
-set -euo pipefail
+require "net/http"
+require "json"
+require "fileutils"
 
-repo="$1"
-tag="$2"
+def github_request(uri, token, headers: {}, limit: 10)
+  raise "Too many HTTP redirects" if limit == 0
 
-github_request() {
-  if [ -n "${GITHUB_TOKEN:-}" ]; then
-    curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" "$@"
+  uri = URI(uri)
+  request = Net::HTTP::Get.new(uri)
+  request["Authorization"] = "Bearer #{token}"
+  headers.each { |key, value| request[key] = value }
+
+  response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+    http.request(request)
+  end
+
+  case response
+  when Net::HTTPSuccess
+    response.body
+  when Net::HTTPRedirection
+    location = response["location"]
+    warn("Redirected to #{location}")
+    github_request(location, token, headers: headers, limit: limit - 1)
   else
-    curl -s "$@"
-  fi
-}
+    raise "Request failed with status #{response.code}"
+  end
+end
 
-release_id="$(github_request "https://api.github.com/repos/$repo/releases/tags/$tag" | jq -r .id)"
-assets="$(github_request "https://api.github.com/repos/$repo/releases/$release_id/assets" | jq -c '.[]')"
+def fetch_github_token
+  return ENV["GITHUB_TOKEN"] if ENV["GITHUB_TOKEN"]
 
-echo "Downloading artifacts from $repo#$tag (release_id=$release_id)"
+  command = 'printf "host=github.com\nprotocol=https\npath=Shopify/lz4-flex-rb.git" | git credential fill'
+  output = %x(#{command})
+  token = output.match(/password=(.+)/)[1].strip
+  raise "Failed to get GitHub token" if token.empty?
 
-for asset in $(echo "${assets}" | jq -r '. | @base64'); do
-  _jq() {
-    echo ${asset} | base64 --decode | jq -r ${1}
-  }
+  token
+end
 
-  url=$(_jq '.browser_download_url')
-  name=$(_jq '.name')
-  mkdir -p pkg
-  echo "Saving artifact to pkg/${name}..."
-  github_request -Lo "pkg/${name}" "${url}"
-done
+if ARGV.length != 2
+  puts "Usage: #{$PROGRAM_NAME} <repo> <tag>"
+  exit 1
+end
 
-echo "Done!"
+repo = ARGV[0]
+tag = ARGV[1]
+token = fetch_github_token
+
+release_url = "https://api.github.com/repos/#{repo}/releases/tags/#{tag}"
+release_response = github_request(release_url, token)
+release_id = JSON.parse(release_response)["id"]
+
+assets_url = "https://api.github.com/repos/#{repo}/releases/#{release_id}/assets"
+assets_response = github_request(assets_url, token)
+assets = JSON.parse(assets_response)
+
+puts "Downloading assets:\n#{assets.map { |asset| "  - #{asset["name"]}" }.join("\n")}"
+puts "Downloading artifacts from #{repo}##{tag} (release_id=#{release_id})"
+
+assets.each do |asset|
+  url = asset["url"]
+  name = asset["name"]
+  FileUtils.mkdir_p("pkg")
+  puts "Saving artifact to pkg/#{name}..."
+  File.open("pkg/#{name}", "wb") do |file|
+    file.write(github_request(url, token, headers: { "Accept" => "application/octet-stream" }))
+  end
+end
+
+puts "Done!"
