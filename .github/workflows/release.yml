@@ -132,7 +132,6 @@
             script: |
               const fs = require("fs");
               const path = require("path");
-              const refIncludesPre = 
 
               const release = await github.rest.repos.createRelease({
                 owner: context.repo.owner,
