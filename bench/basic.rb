@@ -47,7 +47,7 @@ def sample_content(content, sizes)
   results
 end
 
-def benchmark(tag, data_hash, iterations, time, warmup, num_threads)
+def benchmark(tag, data_hash, iterations, time, warmup, num_threads) # rubocop:disable Metrics/ParameterLists
   results = {}
   benchmark_data = Benchmark.ips do |x|
     x.config(time: time, warmup: warmup)
