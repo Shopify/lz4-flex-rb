@@ -132,6 +132,8 @@
             script: |
               const fs = require("fs");
               const path = require("path");
+               
+              const prerelease = "${{ github.ref_name }}".includes(".pre")
 
               const release = await github.rest.repos.createRelease({
                 owner: context.repo.owner,
@@ -139,7 +141,7 @@
                 tag_name: "${{ github.ref }}",
                 name: "${{ github.ref_name }}",
                 generate_release_notes: true,
-                prerelease: "${{ github.ref_name }}".includes(".pre");
+                prerelease,
                 draft: true
               });
 
