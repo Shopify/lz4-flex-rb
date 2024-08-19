@@ -1,40 +1,36 @@
 # frozen_string_literal: true
 
+system "bundle exec rake compile:release"
+
 require "bundler/setup"
 require "benchmark"
 require "lz4_flex"
 require "lz4-ruby"
 require "benchmark/ips"
-require "open-uri"
+require "net/http"
 require "tempfile"
 require "json"
 require "csv"
 
-system "bundle exec rake compile:release"
-
 ADAPTERS = {
   "Lz4Flex" => Lz4Flex,
   "LZ4" => LZ4,
-}
+}.freeze
 
 def download_and_unzip(url)
+  puts "Downloading #{url}"
   bz2_tempfile = Tempfile.new(["webster", ".bz2"])
-
-  puts "Downloading..."
-  URI.open(url) do |data|
-    bz2_tempfile.write(data.read)
-  end
+  data = Net::HTTP.get(URI(url))
+  bz2_tempfile.write(data)
   bz2_tempfile.close
-
   puts "Unzipping #{bz2_tempfile.path}"
   system("bzip2 -dk #{bz2_tempfile.path}")
-
   content = File.read(bz2_tempfile.path.gsub(/\.bz2$/, ""))
   puts "Read #{content.bytesize / 1024 / 1024} MiB of data"
 
-  bz2_tempfile.unlink
-
   content
+ensure
+  bz2_tempfile&.unlink
 end
 
 def sample_content(content, sizes)
@@ -51,46 +47,26 @@ def sample_content(content, sizes)
   results
 end
 
-def benchmark_single_threaded(data, _iterations, time, warmup)
+def benchmark(tag, data_hash, iterations, time, warmup, num_threads)
   results = {}
   benchmark_data = Benchmark.ips do |x|
     x.config(time: time, warmup: warmup)
 
     ADAPTERS.each do |name, adapter|
-      x.report("#{name} single-threaded") do
-        compressed = adapter.compress(data)
-        decompressed = adapter.decompress(compressed)
-      end
-    end
+      data = data_hash.fetch(name)
 
-    x.compare!
-  end.data
-
-  benchmark_data.each do |entry|
-    results[entry[:name]] = entry[:central_tendency]
-  end
-
-  results
-end
-
-def benchmark_multi_threaded(data, iterations, num_threads, time, warmup)
-  results = {}
-  benchmark_data = Benchmark.ips do |x|
-    x.config(time: time, warmup: warmup)
-
-    ADAPTERS.each do |name, adapter|
-      x.report("#{name} multi-threaded") do
-        threads = []
-        num_threads.times do
-          threads << Thread.new do
-            iterations.times do
+      x.report("#{name}.#{tag}") do
+        if num_threads > 1
+          threads = Array.new(num_threads) do
+            Thread.new do
               thread_data = data.dup
-              compressed = adapter.compress(thread_data)
-              decompressed = adapter.decompress(compressed)
+              iterations.times { yield(adapter, thread_data) }
             end
           end
+          threads.each(&:join)
+        else
+          iterations.times { yield(adapter, data) }
         end
-        threads.each(&:join)
       end
     end
 
@@ -104,73 +80,109 @@ def benchmark_multi_threaded(data, iterations, num_threads, time, warmup)
   results
 end
 
-# Usage example
-url = "https://sun.aei.polsl.pl/~sdeor/corpus/webster.bz2"
-sample_sizes = [
-  128,
-  256,
-  512,
-  1024,
-  2048,
-  4096,
-  8192,
-  16384,
-  32768,
-  65536,
-  128 * 1024,
-  256 * 1024,
-  512 * 1024,
-  1024 * 1024,
-]
-content = download_and_unzip(url)
-data_samples = sample_content(content, sample_sizes)
-iterations = 100
-num_threads = 10
-time = 10
-warmup = 3
-csv_data = []
+def format_csv_row(size_bytes, num_threads, results_compress, results_decompress)
+  lz4_compress = results_compress.fetch("LZ4.compress")
+  lz4flex_compress = results_compress.fetch("Lz4Flex.compress")
+  speedup_compress = lz4flex_compress / lz4_compress
 
-data_samples.each do |size_bytes, data|
-  puts "Benchmarking for size: #{size_bytes / 1024} KiB"
+  lz4_decompress = results_decompress.fetch("LZ4.decompress")
+  lz4flex_decompress = results_decompress.fetch("Lz4Flex.decompress")
+  speedup_decompress = lz4flex_decompress / lz4_decompress
 
-  single_threaded_results = benchmark_single_threaded(data, iterations, time, warmup)
-  multi_threaded_results = benchmark_multi_threaded(data, iterations, num_threads, time, warmup)
-
-  lz4_single = single_threaded_results["LZ4 single-threaded"]
-  lz4flex_single = single_threaded_results["Lz4Flex single-threaded"]
-  lz4_multi = multi_threaded_results["LZ4 multi-threaded"]
-  lz4flex_multi = multi_threaded_results["Lz4Flex multi-threaded"]
-
-  single_threaded_speedup = lz4flex_single / lz4_single
-  multi_threaded_speedup = lz4flex_multi / lz4_multi
-
-  csv_data << [
+  [
+    RUBY_PLATFORM,
     size_bytes,
-    lz4_single,
-    lz4flex_single,
-    single_threaded_speedup,
-    lz4_multi,
-    lz4flex_multi,
-    multi_threaded_speedup,
-  ].map do |v|
-    v.respond_to?(:round) ? v.round(2) : v
-  end
-end
-
-csv_file = "tmp/benchmarks-#{Time.now.strftime("%Y%m%d-%H%M%S")}.csv"
-CSV.open(csv_file, "wb") do |csv|
-  csv << [
-    "bytesize",
-    "lz4_single_threaded",
-    "lz4_flex_single_threaded",
-    "single_threaded_speedup",
-    "lz4_multi_threaded",
-    "lz4_flex_multi_threaded",
-    "multi_threaded_speedup",
+    num_threads,
+    lz4_compress,
+    lz4flex_compress,
+    speedup_compress,
+    lz4_decompress,
+    lz4flex_decompress,
+    speedup_decompress,
   ]
-  csv_data.each do |row|
-    csv << row
+end
+
+def run_benchmarks(url:, sample_sizes:, iterations:, num_threads:, time:, warmup:, save: true)
+  content = download_and_unzip(url)
+  data_samples = sample_content(content, sample_sizes)
+  file_name = "tmp/benchmarks_#{Time.now.to_i}.csv"
+  puts "Writing results to #{file_name}"
+
+  CSV.open(file_name, "wb") do |csv|
+    csv << [
+      "platform",
+      "size_bytes",
+      "num_threads",
+      "lz4_compress",
+      "lz4flex_compress",
+      "speedup_compress",
+      "lz4_decompress",
+      "lz4flex_decompress",
+      "speedup_decompress",
+    ]
+
+    data_samples.each do |size_bytes, data|
+      puts "Benchmarking for size: #{size_bytes / 1024} KiB"
+
+      num_threads = num_threads.respond_to?(:call) ? num_threads.call : num_threads
+      compressed_data_lz4_flex = Lz4Flex.compress(data)
+      compressed_data_lz4 = LZ4.compress(data)
+
+      results_compress = benchmark(
+        "compress",
+        { "LZ4" => data, "Lz4Flex" => data },
+        iterations,
+        time,
+        warmup,
+        num_threads,
+      ) { |adapter, data| adapter.compress(data) }
+
+      results_decompress = benchmark(
+        "decompress",
+        { "LZ4" => compressed_data_lz4, "Lz4Flex" => compressed_data_lz4_flex },
+        iterations,
+        time,
+        warmup,
+        num_threads,
+      ) { |adapter, data| adapter.decompress(data) }
+
+      csv << format_csv_row(
+        size_bytes,
+        num_threads,
+        results_compress,
+        results_decompress,
+      )
+    end
+  rescue SignalException
+    puts "Interrupted! Cleaning up..."
+  end
+
+  if save
+    puts "Done! Results written to #{file_name}"
+  else
+    puts "Warmup done! Cleaning up..."
+    FileUtils.rm(file_name)
+    puts "=========================================================="
+    sleep(1)
   end
 end
 
-puts "Wrote CSV to disk #{csv_file}"
+# Warmup
+run_benchmarks(
+  url: "https://sun.aei.polsl.pl/~sdeor/corpus/webster.bz2",
+  sample_sizes: [1024, 1024 * 1024, 10 * 1024 * 1024],
+  iterations: 10,
+  num_threads: -> { rand(1..10) },
+  time: 1,
+  warmup: 1,
+  save: false,
+)
+
+run_benchmarks(
+  url: "https://sun.aei.polsl.pl/~sdeor/corpus/webster.bz2",
+  sample_sizes: 10000.times.map { rand(1..(20 * 1024 * 1024)) },
+  iterations: 100,
+  num_threads: -> { rand(1..10) },
+  time: 3,
+  warmup: 0,
+)

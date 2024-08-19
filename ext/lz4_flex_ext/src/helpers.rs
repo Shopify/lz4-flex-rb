@@ -1,11 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{
-    cell::Cell,
-    ffi::c_void,
-    marker::PhantomData,
-    mem::MaybeUninit,
-    ptr::null_mut,
-};
+use std::{cell::Cell, ffi::c_void, marker::PhantomData, mem::MaybeUninit, ptr::null_mut};
 
 use magnus::{
     encoding::{EncodingCapable, Index},
@@ -180,7 +174,7 @@ where
     F: FnMut() -> R,
     R: Sized,
 {
-    const MAX_INPUT_LEN: usize = 512;
+    const MAX_INPUT_LEN: usize = 8192;
 
     if input_len > MAX_INPUT_LEN {
         nogvl(func)
