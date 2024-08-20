@@ -9,3 +9,4 @@
 /target/
 *.bundle
 *.so
+.DS_Store

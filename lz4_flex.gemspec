@@ -31,5 +31,5 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
   spec.extensions = ["ext/lz4_flex_ext/extconf.rb"]
-  spec.add_dependency("rb_sys", "~> 0.9.101")
+  spec.add_dependency("rb_sys")
 end
