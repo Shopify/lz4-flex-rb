@@ -45,10 +45,10 @@ record the string's size and encoding.
 require 'lz4_flex'
 
 # Compress data
-compressed = LZ4Flex.compress("Hello, World!")
+compressed = Lz4Flex.compress("Hello, World!")
 
 # Decompress data
-decompressed = LZ4Flex.decompress(compressed)
+decompressed = Lz4Flex.decompress(compressed)
 
 puts decompressed  # => "Hello, World!"
 puts decompressed.encoding # => Encoding::UTF_8
