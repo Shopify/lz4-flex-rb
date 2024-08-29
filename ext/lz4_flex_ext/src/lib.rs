@@ -12,7 +12,6 @@ use magnus::{
     value::{InnerValue, Lazy},
     Error, ExceptionClass, RModule, Ruby,
 };
-use rb_sys::ruby_abi_version;
 
 static MODULE_ROOT: Lazy<RModule> = Lazy::new(|ruby| ruby.define_module("Lz4Flex").unwrap());
 
@@ -45,8 +44,6 @@ pub(crate) fn decode_error_class() -> ExceptionClass {
     });
     unsafe { DECODE_ERROR_CLASS.get_inner_with(&Ruby::get_unchecked()) }
 }
-
-ruby_abi_version!();
 
 #[magnus::init]
 fn init(ruby: &Ruby) -> Result<(), Error> {
