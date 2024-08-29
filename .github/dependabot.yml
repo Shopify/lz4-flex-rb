@@ -1,15 +1,4 @@
 version: 2
-
-groups:
-  cargo-deps:
-    dependency-type: "production"
-  ruby-deps:
-    dependency-type: "development"
-    exclude-patterns:
-    - "rb_sys"
-  rubocop:
-    patterns:
-version: 2
 updates:
   - package-ecosystem: "bundler"
     directory: "/"
