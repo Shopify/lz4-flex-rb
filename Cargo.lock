@@ -195,6 +195,7 @@ dependencies = [
  "magnus",
  "postcard",
  "rb-sys",
+ "rb-sys-env",
  "serde",
  "static_assertions",
 ]
