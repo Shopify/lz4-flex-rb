@@ -31,7 +31,7 @@
         - name: Build gem
           run: bundle exec rake build
 
-        - uses: actions/upload-artifact@v3
+        - uses: actions/upload-artifact@v4.4.3
           with:
             name: source-gem
             path: pkg/*.gem
@@ -45,7 +45,7 @@
       steps:
         - uses: actions/checkout@v4
 
-        - uses: actions/download-artifact@v4.1.7
+        - uses: actions/download-artifact@v4.1.8
           with:
             name: source-gem
             path: pkg
@@ -78,7 +78,7 @@
             platform: ${{ matrix.platform }}
             ruby-versions: "3.2,3.3"
           
-        - uses: actions/upload-artifact@v3
+        - uses: actions/upload-artifact@v4.4.3
           with:
             name: cross-gem
             path: ${{ steps.cross-gem.outputs.gem-path }}
@@ -92,7 +92,7 @@
       steps:
         - uses: actions/checkout@v4
 
-        - uses: actions/download-artifact@v4.1.7
+        - uses: actions/download-artifact@v4.1.8
           with:
             name: cross-gem
             path: pkg
@@ -108,12 +108,12 @@
       needs: [test-cross-gem-install, test-source-gem-install]
       runs-on: ubuntu-latest
       steps:
-        - uses: actions/download-artifact@v4.1.7
+        - uses: actions/download-artifact@v4.1.8
           with:
             name: cross-gem
             path: cross-gem
 
-        - uses: actions/download-artifact@v4.1.7
+        - uses: actions/download-artifact@v4.1.8
           with:
             name: source-gem
             path: source-gem
