@@ -12,9 +12,9 @@ crate-type = ["cdylib"]
 [dependencies]
 lz4_flex = { version = "0.11.3", default-features = true }
 magnus = { version = "0.7.1", features = ["rb-sys"] }
-postcard = "1.0.10"
-rb-sys = { version = "0.9.101", features = ["stable-api-compiled-fallback"] }
-serde = { version = "1.0.210", features = ["derive"] }
+postcard = "1.1.1"
+rb-sys = { version = "0.9.103", features = ["stable-api-compiled-fallback"] }
+serde = { version = "1.0.215", features = ["derive"] }
 static_assertions = "1.1.0"
 
 [build-dependencies]
