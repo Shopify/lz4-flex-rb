@@ -16,7 +16,7 @@ GEM
     json (2.7.2)
     language_server-protocol (3.17.0.3)
     lz4-ruby (0.3.3)
-    minitest (5.25.1)
+    minitest (5.25.4)
     minitest-focus (1.4.0)
       minitest (>= 4, < 6)
     minitest-reporters (1.7.1)
@@ -46,9 +46,9 @@ GEM
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.2.1)
-    rake-compiler (1.2.8)
+    rake-compiler (1.2.9)
       rake
-    rb_sys (0.9.102)
+    rb_sys (0.9.105)
     regexp_parser (2.9.2)
     rexml (3.3.6)
       strscan
@@ -85,11 +85,11 @@ DEPENDENCIES
   benchmark-ips
   lz4-ruby
   lz4_flex!
-  minitest (~> 5.0)
+  minitest (~> 5.25)
   nicetest
   rake (~> 13.0)
   rake-compiler
-  rb_sys (~> 0.9.100)
+  rb_sys (~> 0.9.105)
   rubocop-shopify
 
 BUNDLED WITH
