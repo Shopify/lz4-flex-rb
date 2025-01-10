@@ -76,7 +76,7 @@
           id: cross-gem
           with:
             platform: ${{ matrix.platform }}
-            ruby-versions: "3.2,3.3,3.4"
+            ruby-versions: "3.2,3.3.5,3.4"
 
         - uses: actions/upload-artifact@v4.4.3
           with:
