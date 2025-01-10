@@ -76,8 +76,8 @@
           id: cross-gem
           with:
             platform: ${{ matrix.platform }}
-            ruby-versions: "3.2,3.3"
-          
+            ruby-versions: "3.2,3.3,3.4"
+
         - uses: actions/upload-artifact@v4.4.3
           with:
             name: cross-gem
@@ -132,7 +132,7 @@
             script: |
               const fs = require("fs");
               const path = require("path");
-               
+
               const prerelease = "${{ github.ref_name }}".includes(".pre")
 
               const release = await github.rest.repos.createRelease({

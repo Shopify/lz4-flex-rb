@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "macos-latest"]
-        ruby: ["3.2", "3.3", "ruby-head"]
+        ruby: ["3.2", "3.3", "3.4", "ruby-head"]
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +42,7 @@ jobs:
       - uses: oxidize-rb/actions/setup-ruby-and-rust@v1
         with:
           rustup-toolchain: "1.80.1"
-          ruby-version: "3.3"
+          ruby-version: "3.4"
           bundler-cache: true
           cargo-cache: true
           cache-version: v1
