@@ -48,7 +48,7 @@ GEM
     rake (13.2.1)
     rake-compiler (1.2.8)
       rake
-    rb_sys (0.9.102)
+    rb_sys (0.9.106)
     regexp_parser (2.9.2)
     rexml (3.3.6)
       strscan
@@ -93,4 +93,4 @@ DEPENDENCIES
   rubocop-shopify
 
 BUNDLED WITH
-   2.6.2
+   2.6.0.dev
