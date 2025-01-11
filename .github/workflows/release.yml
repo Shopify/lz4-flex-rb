@@ -70,6 +70,7 @@
           uses: actions/upload-artifact/merge@v4.6.0
           with:
             name: cross-gem
+            pattern: cross-gem-*
             delete-merged: true
 
     test-cross-gem-install:
@@ -133,7 +134,7 @@
           run: |
             ls -la cross-gem source-gem
             mkdir -p pkg
-            cp cross-gem/*.gem source-gem/*.gem pkg/
+            cp -v cross-gem/*.gem source-gem/*.gem pkg/
 
         - name: Create release
           if: startsWith(github.ref, 'refs/tags/v')
