@@ -76,12 +76,18 @@
           id: cross-gem
           with:
             platform: ${{ matrix.platform }}
-            ruby-versions: "3.2,3.3.5,3.4"
+            ruby-versions: "3.2,3.3,3.4"
 
-        - uses: actions/upload-artifact@v4.4.3
+        - uses: actions/upload-artifact@v4.6.0
+          with:
+            name: cross-gem-${{ matrix.platform }}
+            path: ${{ steps.cross-gem.outputs.gem-path }}
+          
+        - name: Merge Artifacts
+          uses: actions/upload-artifact/merge@v4.6.0
           with:
             name: cross-gem
-            path: ${{ steps.cross-gem.outputs.gem-path }}
+            delete-merged: true
 
     test-cross-gem-install:
       runs-on: ${{ matrix.os }}
