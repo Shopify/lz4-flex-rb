@@ -65,7 +65,9 @@ task :release do
       system("gh run watch #{runs.first}")
       shipit_link = "https://shipit.shopify.io/shopify/lz4-flex-rb/release"
       system("osascript -e 'display notification \"Release complete -> #{shipit_link}\" with title \"lz4_flex\"'")
-      puts "Release complete, see #{shipit_link}"
+      puts "Next steps:"
+      puts "  - Publish the GitHub release manually, see https://github.com/shopify/lz4-flex-rb/releases"
+      puts "  - In the shipit UI, click the 'Deploy' button for the new version, see #{shipit_link}"
     end
   else
     File.write("lib/lz4_flex/version.rb", old_version_rb)
