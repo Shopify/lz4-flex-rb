@@ -36,29 +36,7 @@
             name: source-gem
             path: pkg/*.gem
 
-    test-source-gem-install:
-      runs-on: ${{ matrix.os }}
-      needs: source-gem
-      strategy:
-        matrix:
-          os: ["ubuntu-latest", "macos-latest"]
-      steps:
-        - uses: actions/checkout@v4
-
-        - uses: actions/download-artifact@v4.1.8
-          with:
-            name: source-gem
-            path: pkg
-
-        - uses: ruby/setup-ruby@v1
-          with:
-            ruby-version: "head"
-
-        - name: Test source gem install
-          shell: bash
-          run: test/test_gem_install.sh pkg/*.gem
-
-    cross-gem:
+    cross-gem-compile:
       name: Compile native gem for ${{ matrix.platform }}
       runs-on: ubuntu-latest
       needs: ci-data
@@ -82,7 +60,12 @@
           with:
             name: cross-gem-${{ matrix.platform }}
             path: ${{ steps.cross-gem.outputs.gem-path }}
-          
+        
+    cross-gem:
+      name: cross-gem
+      runs-on: ubuntu-latest
+      needs: cross-gem-compile
+      steps:
         - name: Merge Artifacts
           uses: actions/upload-artifact/merge@v4.6.0
           with:
@@ -108,6 +91,28 @@
         - name: Test cross gem install
           shell: bash
           run: test/test_gem_install.sh precompiled
+
+    test-source-gem-install:
+      runs-on: ${{ matrix.os }}
+      needs: source-gem
+      strategy:
+        matrix:
+          os: ["ubuntu-latest", "macos-latest"]
+      steps:
+        - uses: actions/checkout@v4
+
+        - uses: actions/download-artifact@v4.1.8
+          with:
+            name: source-gem
+            path: pkg
+
+        - uses: ruby/setup-ruby@v1
+          with:
+            ruby-version: "head"
+
+        - name: Test source gem install
+          shell: bash
+          run: test/test_gem_install.sh pkg/*.gem
 
     release:
       name: Create release for ${{ github.ref }}
