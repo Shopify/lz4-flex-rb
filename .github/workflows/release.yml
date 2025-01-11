@@ -36,6 +36,63 @@
             name: source-gem
             path: pkg/*.gem
 
+    cross-gem-compile:
+      name: Compile native gem for ${{ matrix.platform }}
+      runs-on: ubuntu-latest
+      needs: ci-data
+      strategy:
+        matrix:
+          platform: ${{ fromJSON(needs.ci-data.outputs.result).supported-ruby-platforms }}
+      steps:
+        - uses: actions/checkout@v4
+
+        - uses: ruby/setup-ruby@v1
+          with:
+            bundler-cache: true
+
+        - uses: oxidize-rb/actions/cross-gem@v1
+          id: cross-gem
+          with:
+            platform: ${{ matrix.platform }}
+            ruby-versions: "3.2,3.3,3.4"
+
+        - uses: actions/upload-artifact@v4.6.0
+          with:
+            name: cross-gem-${{ matrix.platform }}
+            path: ${{ steps.cross-gem.outputs.gem-path }}
+        
+    cross-gem:
+      name: cross-gem
+      runs-on: ubuntu-latest
+      needs: cross-gem-compile
+      steps:
+        - name: Merge Artifacts
+          uses: actions/upload-artifact/merge@v4.6.0
+          with:
+            name: cross-gem
+            pattern: cross-gem-*
+            delete-merged: true
+
+    test-cross-gem-install:
+      runs-on: ${{ matrix.os }}
+      needs: cross-gem
+      strategy:
+        matrix:
+          os: ["ubuntu-latest", "macos-latest"]
+      steps:
+        - uses: actions/checkout@v4
+
+        - uses: actions/download-artifact@v4.1.8
+          with:
+            name: cross-gem
+            path: pkg
+
+        - uses: ruby/setup-ruby@v1
+
+        - name: Test cross gem install
+          shell: bash
+          run: test/test_gem_install.sh precompiled
+
     test-source-gem-install:
       runs-on: ${{ matrix.os }}
       needs: source-gem
@@ -58,51 +115,6 @@
           shell: bash
           run: test/test_gem_install.sh pkg/*.gem
 
-    cross-gem:
-      name: Compile native gem for ${{ matrix.platform }}
-      runs-on: ubuntu-latest
-      needs: ci-data
-      strategy:
-        matrix:
-          platform: ${{ fromJSON(needs.ci-data.outputs.result).supported-ruby-platforms }}
-      steps:
-        - uses: actions/checkout@v4
-
-        - uses: ruby/setup-ruby@v1
-          with:
-            bundler-cache: true
-
-        - uses: oxidize-rb/actions/cross-gem@v1
-          id: cross-gem
-          with:
-            platform: ${{ matrix.platform }}
-            ruby-versions: "3.2,3.3"
-          
-        - uses: actions/upload-artifact@v4.4.3
-          with:
-            name: cross-gem
-            path: ${{ steps.cross-gem.outputs.gem-path }}
-
-    test-cross-gem-install:
-      runs-on: ${{ matrix.os }}
-      needs: cross-gem
-      strategy:
-        matrix:
-          os: ["ubuntu-latest", "macos-latest"]
-      steps:
-        - uses: actions/checkout@v4
-
-        - uses: actions/download-artifact@v4.1.8
-          with:
-            name: cross-gem
-            path: pkg
-
-        - uses: ruby/setup-ruby@v1
-
-        - name: Test cross gem install
-          shell: bash
-          run: test/test_gem_install.sh precompiled
-
     release:
       name: Create release for ${{ github.ref }}
       needs: [test-cross-gem-install, test-source-gem-install]
@@ -122,7 +134,7 @@
           run: |
             ls -la cross-gem source-gem
             mkdir -p pkg
-            cp cross-gem/*.gem source-gem/*.gem pkg/
+            cp -v cross-gem/*.gem source-gem/*.gem pkg/
 
         - name: Create release
           if: startsWith(github.ref, 'refs/tags/v')
@@ -132,7 +144,7 @@
             script: |
               const fs = require("fs");
               const path = require("path");
-               
+
               const prerelease = "${{ github.ref_name }}".includes(".pre")
 
               const release = await github.rest.repos.createRelease({

@@ -7,6 +7,8 @@ require "lz4-ruby"
 class BlockTest < Minitest::Test
   parallelize_me!
 
+  BIN_TEST_NAMES = Dir["test/data/*"].map { |f| File.basename(f).split(".", 2).first }
+
   def test_that_it_has_a_version_number
     refute_nil(::Lz4Flex::VERSION)
   end
@@ -25,6 +27,15 @@ class BlockTest < Minitest::Test
       assert_equal(Encoding::BINARY, compressed.encoding)
       assert_equal(input, decompressed)
       assert_equal(encoding, decompressed.encoding)
+    end
+  end
+
+  BIN_TEST_NAMES.each do |basename|
+    define_method("test_binary_compat_#{basename}") do
+      input = File.binread("test/data/#{basename}.input")
+      expected = File.binread("test/data/#{basename}.expected")
+
+      assert_equal(expected, Lz4Flex.decompress(input))
     end
   end
 
