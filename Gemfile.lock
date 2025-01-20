@@ -54,7 +54,7 @@ GEM
     rake (13.2.1)
     rake-compiler (1.2.9)
       rake
-    rb_sys (0.9.107)
+    rb_sys (0.9.108)
     regexp_parser (2.10.0)
     rubocop (1.70.0)
       json (~> 2.3)
@@ -93,7 +93,7 @@ DEPENDENCIES
   nicetest
   rake (~> 13.0)
   rake-compiler
-  rb_sys (~> 0.9.100)
+  rb_sys (~> 0.9.108)
   rubocop-shopify
 
 BUNDLED WITH
