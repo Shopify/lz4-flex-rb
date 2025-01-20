@@ -195,7 +195,7 @@ dependencies = [
  "magnus",
  "postcard",
  "rb-sys",
- "rb-sys-env 0.2.1",
+ "rb-sys-env 0.2.2",
  "serde",
  "static_assertions",
 ]
@@ -276,18 +276,18 @@ dependencies = [
 
 [[package]]
 name = "rb-sys"
-version = "0.9.107"
+version = "0.9.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56aaf81d9efc195606456e91896297ee5ab2002381539f8ed1ba6b4f2e467f3b"
+checksum = "1e955384e1a4dc64b71d1e4b39ed0edbd77c7bde4a10dfd5ad208e1160fddfa7"
 dependencies = [
  "rb-sys-build",
 ]
 
 [[package]]
 name = "rb-sys-build"
-version = "0.9.107"
+version = "0.9.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "035b513baded6df2b90a8559efb1973c47ba42e16c21c5f0863dd2aa4dbd6abe"
+checksum = "c167c6571889b2550d6fcb315e8aa60bdb95e47e4b64793e3f65a30dc25afc85"
 dependencies = [
  "bindgen",
  "lazy_static",
@@ -306,9 +306,9 @@ checksum = "a35802679f07360454b418a5d1735c89716bde01d35b1560fc953c1415a0b3bb"
 
 [[package]]
 name = "rb-sys-env"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b0412803f8fea126e8f500d8eb6d5394a983517888a790254f4190e9b16a7a5"
+checksum = "08f8d2924cf136a1315e2b4c7460a39f62ef11ee5d522df9b2750fab55b868b6"
 
 [[package]]
 name = "regex"
