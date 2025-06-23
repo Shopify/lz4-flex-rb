@@ -22,7 +22,7 @@ jobs:
 
       - uses: oxidize-rb/actions/setup-ruby-and-rust@d4731ac609739be0920f0faf5569b58b8eb1a262 # v1.4.0
         with:
-          rustup-toolchain: "1.80.1"
+          rustup-toolchain: "1.81.0"
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
           cargo-cache: true
@@ -41,7 +41,7 @@ jobs:
 
       - uses: oxidize-rb/actions/setup-ruby-and-rust@d4731ac609739be0920f0faf5569b58b8eb1a262 # v1.4.0
         with:
-          rustup-toolchain: "1.80.1"
+          rustup-toolchain: "1.81.0"
           ruby-version: "3.4"
           bundler-cache: true
           cargo-cache: true
