@@ -19,7 +19,7 @@ class BlockTest < Minitest::Test
     define_method("test_roundtrip_compress_#{file_slug}") do
       next if File.directory?(f)
 
-      input = rand(10) == 1 ? File.binread(f) : File.read(f)
+      input = rand(10) == 1 ? read_file(f) : read_file(f, false)
       encoding = input.encoding
       compressed = with_gc_stress { Lz4Flex.compress(input) }
       decompressed = with_gc_stress { Lz4Flex.decompress(compressed) }
@@ -32,8 +32,8 @@ class BlockTest < Minitest::Test
 
   BIN_TEST_NAMES.each do |basename|
     define_method("test_binary_compat_#{basename}") do
-      input = File.binread("test/data/#{basename}.input")
-      expected = File.binread("test/data/#{basename}.expected")
+      input = read_file("test/data/#{basename}.input")
+      expected = read_file("test/data/#{basename}.expected")
 
       assert_equal(expected, Lz4Flex.decompress(input))
     end
@@ -42,6 +42,24 @@ class BlockTest < Minitest::Test
   def test_decompress_fail
     compressed = Lz4Flex.compress("foobarbaz")
     assert_raises(Lz4Flex::DecodeError) { Lz4Flex.decompress(compressed[0..8]) }
+  end
+
+  def read_file(file, bin = true, attempts = 3)
+    if bin
+      File.binread(file)
+    else
+      File.read(file)
+    end
+  rescue Errno::EFAULT
+    # If we hit an EFAULT, retry a few times since it can be a transient error on ruby 3.2
+    attempts -= 1
+
+    if attempts > 0
+      sleep(0.1)
+      retry
+    else
+      raise
+    end
   end
 
   class VarIntTest < Minitest::Test
