@@ -14,7 +14,7 @@
       outputs:
         result: ${{ steps.fetch.outputs.result }}
       steps:
-        - uses: oxidize-rb/actions/fetch-ci-data@d4731ac609739be0920f0faf5569b58b8eb1a262 # v1.4.0
+        - uses: oxidize-rb/actions/fetch-ci-data@c179116ae638d5d1da5039b8ca798b1fd5ce9219 # v1.4.1
           id: fetch
           with:
             supported-ruby-platforms: |
@@ -24,7 +24,7 @@
       steps:
         - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-        - uses: ruby/setup-ruby@e34163cd15f4bb403dcd72d98e295997e6a55798 # v1.238.0
+        - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
           with:
             bundler-cache: true
 
@@ -46,11 +46,11 @@
       steps:
         - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-        - uses: ruby/setup-ruby@e34163cd15f4bb403dcd72d98e295997e6a55798 # v1.238.0
+        - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
           with:
             bundler-cache: true
 
-        - uses: oxidize-rb/actions/cross-gem@d4731ac609739be0920f0faf5569b58b8eb1a262 # v1.4.0
+        - uses: oxidize-rb/actions/cross-gem@c179116ae638d5d1da5039b8ca798b1fd5ce9219 # v1.4.1
           id: cross-gem
           with:
             platform: ${{ matrix.platform }}
@@ -87,7 +87,7 @@
             name: cross-gem
             path: pkg
 
-        - uses: ruby/setup-ruby@e34163cd15f4bb403dcd72d98e295997e6a55798 # v1.238.0
+        - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
 
         - name: Test cross gem install
           shell: bash
@@ -107,7 +107,7 @@
             name: source-gem
             path: pkg
 
-        - uses: ruby/setup-ruby@e34163cd15f4bb403dcd72d98e295997e6a55798 # v1.238.0
+        - uses: ruby/setup-ruby@a4effe49ee8ee5b8b5091268c473a4628afb5651 # v1.245.0
           with:
             ruby-version: "head"
 
@@ -138,7 +138,7 @@
 
         - name: Create release
           if: startsWith(github.ref, 'refs/tags/v')
-          uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
+          uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
           with:
             github-token: "${{ secrets.GITHUB_TOKEN }}"
             script: |
