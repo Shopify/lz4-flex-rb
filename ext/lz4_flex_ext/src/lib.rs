@@ -6,7 +6,6 @@ pub(crate) use header::*;
 pub(crate) use helpers::*;
 
 use magnus::{
-    exception::standard_error,
     function,
     prelude::*,
     value::{InnerValue, Lazy},
@@ -19,7 +18,7 @@ pub(crate) fn base_error_class() -> ExceptionClass {
     static BASE_ERROR_CLASS: Lazy<ExceptionClass> = Lazy::new(|ruby| {
         MODULE_ROOT
             .get_inner_with(ruby)
-            .define_error("Error", standard_error())
+            .define_error("Error", ruby.exception_standard_error())
             .unwrap()
     });
     unsafe { BASE_ERROR_CLASS.get_inner_with(&Ruby::get_unchecked()) }
