@@ -3,14 +3,13 @@ use std::{cell::Cell, ffi::c_void, marker::PhantomData, mem::MaybeUninit, ptr::n
 
 use magnus::{
     encoding::{EncodingCapable, Index},
-    exception::type_error,
     rb_sys::AsRawValue,
     value::ReprValue,
     Error, RString, Ruby, TryConvert, Value,
 };
 use rb_sys::{
     rb_gc_guard, rb_str_locktmp, rb_str_modify_expand, rb_str_set_len, rb_str_unlocktmp,
-    rb_thread_call_without_gvl, RSTRING_PTR,
+    rb_thread_call_without_gvl, stable_api, StableApiDefinition, RSTRING_PTR,
 };
 
 use crate::base_error_class;
@@ -72,42 +71,61 @@ impl TryFrom<RString> for Encoding {
 }
 
 #[derive(Debug)]
-pub struct LockedRString<'a>(pub(crate) RString, PhantomData<&'a ()>);
+pub struct LockedRString<'a> {
+    string: RString,
+    locked: bool,
+    _phantom: PhantomData<&'a ()>,
+}
 
 impl<'a> LockedRString<'a> {
     pub(crate) fn new(string: RString) -> Self {
-        unsafe { rb_str_locktmp(string.as_raw()) };
+        let api = stable_api::get_default();
+        let is_frozen = unsafe { api.frozen_p(string.as_raw()) };
 
-        Self(string, PhantomData)
+        if !is_frozen {
+            unsafe { rb_str_locktmp(string.as_raw()) };
+        }
+
+        Self {
+            string,
+            locked: !is_frozen,
+            _phantom: PhantomData,
+        }
     }
 
     pub(crate) fn as_slice(&self) -> &'a [u8] {
         unsafe {
-            std::slice::from_raw_parts(RSTRING_PTR(self.0.as_raw()) as *const u8, self.0.len())
+            std::slice::from_raw_parts(
+                RSTRING_PTR(self.string.as_raw()) as *const u8,
+                self.string.len(),
+            )
         }
     }
 
     pub(crate) fn len(&self) -> usize {
-        self.0.len()
+        self.string.len()
     }
 
     pub(crate) fn encoding(&self) -> Result<Encoding, Error> {
-        Encoding::try_from(self.0)
+        Encoding::try_from(self.string)
     }
 }
 
 impl Drop for LockedRString<'_> {
     fn drop(&mut self) {
-        unsafe { rb_str_unlocktmp(self.0.as_raw()) };
+        if self.locked {
+            unsafe { rb_str_unlocktmp(self.string.as_raw()) };
+        }
         // Keep the value alive while we hold this RString
-        let _ = rb_gc_guard!(self.0.as_raw());
+        let _ = rb_gc_guard!(self.string.as_raw());
     }
 }
 
 impl TryConvert for LockedRString<'_> {
     fn try_convert(val: Value) -> Result<Self, magnus::Error> {
+        let ruby = unsafe { Ruby::get_unchecked() };
         let rstring: RString = RString::from_value(val).ok_or(magnus::Error::new(
-            type_error(),
+            ruby.exception_type_error(),
             format!("expected String, got {}", val.class()),
         ))?;
         Ok(Self::new(rstring))
@@ -125,7 +143,8 @@ pub struct RStringMut<'a> {
 
 impl<'a> RStringMut<'a> {
     pub(crate) fn buf_new(size: usize) -> Self {
-        let string = RString::buf_new(size);
+        let ruby = unsafe { Ruby::get_unchecked() };
+        let string = ruby.str_buf_new(size as _);
         Self {
             inner: string,
             capa: Cell::new(size),
