@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    lz4_flex (1.0.1)
+    lz4_flex (1.1.0)
       rb_sys
 
 GEM
