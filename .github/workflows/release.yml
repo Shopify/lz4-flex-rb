@@ -50,11 +50,11 @@ jobs:
         with:
           bundler-cache: true
 
-      - uses: oxidize-rb/actions/cross-gem@c179116ae638d5d1da5039b8ca798b1fd5ce9219 # v1.4.1
+      - uses: oxidize-rb/actions/cross-gem@e5f9a49a7812a078584072f6e3f657ad247c8771 # v1.4.4
         id: cross-gem
         with:
           platform: ${{ matrix.platform }}
-          ruby-versions: "3.2,3.3,3.4"
+          ruby-versions: "3.2,3.3,3.4,4.0"
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
