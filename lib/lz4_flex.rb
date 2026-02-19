@@ -6,5 +6,5 @@ begin
   RUBY_VERSION =~ /(\d+\.\d+)/
   require "lz4_flex/#{Regexp.last_match(1)}/lz4_flex_ext"
 rescue LoadError
-  require_relative "lz4_flex/lz4_flex_ext"
+  require "lz4_flex/lz4_flex_ext"
 end
