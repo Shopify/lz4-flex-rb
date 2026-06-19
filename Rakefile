@@ -36,6 +36,11 @@ task :compile do
   FileUtils.cp(COMPILED_EXT, LIB_EXT)
 end
 
+namespace :compile do
+  desc "Compile the BoltFFI native extension for development"
+  task dev: :compile
+end
+
 Rake::Task[:test].enhance([:compile])
 
 Rake::Task["release"].clear
