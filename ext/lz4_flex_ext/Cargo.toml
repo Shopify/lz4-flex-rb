@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Ian Ker-Seymer <ian.kerseymer@shopify.com>"]
 license = "MIT"
 publish = false
-rust-version = "1.86.0"
+rust-version = "1.88.0"
 
 [lib]
 crate-type = ["staticlib", "cdylib"]
