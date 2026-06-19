@@ -80,7 +80,9 @@ if (staticlib_out = ENV["BOLTFFI_BUILD_STATICLIB"])
           line.scan(/"([^"]+\.a)"/) { |(path)| produced = path }
         elsif (idx = line.index("native-static-libs:"))
           # last occurrence wins (the root crate's), mirroring the .a rule
-          native_libs = line[(idx + "native-static-libs:".length)..].split
+          native_libs = line[(idx + "native-static-libs:".length)..]
+            .gsub(/\e\[[0-9;]*m/, "")
+            .split
         end
       end
     end
