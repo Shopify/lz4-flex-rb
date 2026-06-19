@@ -8,15 +8,11 @@ publish = false
 rust-version = "1.81.0"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
+boltffi = "0.26.1"
 lz4_flex = { version = "0.12.0", default-features = true }
-magnus = { version = "0.8.2", features = ["rb-sys"] }
 postcard = "1.1.3"
-rb-sys = { version = "0.9.124", features = ["stable-api-compiled-fallback"] }
 serde = { version = "1.0.219", features = ["derive"] }
 static_assertions = "1.1.0"
-
-[build-dependencies]
-rb-sys-env = "0.2.3"

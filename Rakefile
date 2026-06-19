@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 require "bundler/gem_tasks"
+require "fileutils"
+require "rbconfig"
+require "rake/clean"
 require "rake/testtask"
-require "rb_sys/extensiontask"
 
 Rake::TestTask.new(:test) do |t|
   t.ruby_opts = ["-W0", "-W:deprecated"]
@@ -16,10 +18,25 @@ require "rubocop/rake_task"
 RuboCop::RakeTask.new
 
 GEMSPEC = Gem::Specification.load("lz4_flex.gemspec")
+EXT_DIR = "ext/lz4_flex_ext"
+EXT_NAME = "lz4_flex_ext_native"
+DLEXT = RbConfig::CONFIG.fetch("DLEXT")
+COMPILED_EXT = File.join(EXT_DIR, "#{EXT_NAME}.#{DLEXT}")
+LIB_EXT = File.join("lib", "#{EXT_NAME}.#{DLEXT}")
 
-RbSys::ExtensionTask.new("lz4_flex_ext", GEMSPEC) do |ext|
-  ext.lib_dir = "lib/lz4_flex"
+CLEAN.include(File.join(EXT_DIR, "Makefile"), COMPILED_EXT, LIB_EXT)
+CLOBBER.include("target", "dist")
+
+desc "Compile the BoltFFI native extension"
+task :compile do
+  Dir.chdir(EXT_DIR) do
+    ruby "extconf.rb"
+    sh "make"
+  end
+  FileUtils.cp(COMPILED_EXT, LIB_EXT)
 end
+
+Rake::Task[:test].enhance([:compile])
 
 Rake::Task["release"].clear
 

@@ -26,10 +26,9 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/releases"
 
-  spec.files = Dir["README.md", "LICENSE.md", "lib/**/*.rb", "Cargo.*", "ext/**/*.{rs,rb,toml}"]
+  spec.files = Dir["README.md", "LICENSE.md", "boltffi.toml", "lib/**/*.rb", "Cargo.*", "ext/**/*.{rs,rb,toml,c}"]
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
   spec.extensions = ["ext/lz4_flex_ext/extconf.rb"]
-  spec.add_dependency("rb_sys", "~> 0.9.124")
 end

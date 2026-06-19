@@ -1,7 +1,6 @@
-use magnus::Error;
 use serde::{Deserialize, Serialize};
 
-use crate::{base_error_class, decode_error_class, Encoding};
+use crate::{Encoding, Lz4FlexError};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[repr(transparent)]
@@ -16,8 +15,8 @@ impl VersionAndEncoding {
         self.0 >> 4
     }
 
-    const fn encoding(&self) -> Encoding {
-        Encoding::from_u8(self.0 & 0b1111)
+    fn encoding(&self) -> Result<Encoding, Lz4FlexError> {
+        Encoding::from_u8(self.0 & 0b1111).ok_or_else(|| Lz4FlexError::base("unsupported encoding"))
     }
 }
 
@@ -31,7 +30,7 @@ pub(crate) struct Header {
 impl Header {
     pub(crate) const MAX_SERIALIZED_SIZE: usize = size_of::<Self>();
 
-    pub(crate) fn from_varint(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
+    pub(crate) fn from_varint(bytes: &[u8]) -> Result<(Self, &[u8]), Lz4FlexError> {
         let mut val = 0u32;
         let mut varbyte_len = 0;
 
@@ -49,11 +48,11 @@ impl Header {
             }
 
             if varbyte_len > 5 {
-                return Err(Error::new(decode_error_class(), "varint too long"));
+                return Err(Lz4FlexError::decode("varint too long"));
             }
         }
 
-        Err(Error::new(decode_error_class(), "unexpected end of varint"))
+        Err(Lz4FlexError::decode("unexpected end of varint"))
     }
 
     pub(crate) fn new(size: u32, encoding: Encoding) -> Self {
@@ -63,23 +62,19 @@ impl Header {
         }
     }
 
-    pub(crate) const fn encoding(&self) -> Encoding {
+    pub(crate) fn encoding(&self) -> Result<Encoding, Lz4FlexError> {
         self.metadata.encoding()
     }
 
-    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Error> {
-        let (header, rest) = postcard::take_from_bytes::<Self>(bytes).map_err(|e| {
-            Error::new(
-                decode_error_class(),
-                format!("failed to deserialize header: {}", e),
-            )
-        })?;
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Result<(Self, &[u8]), Lz4FlexError> {
+        let (header, rest) = postcard::take_from_bytes::<Self>(bytes)
+            .map_err(|e| Lz4FlexError::decode(format!("failed to deserialize header: {}", e)))?;
 
         if header.metadata.version() != 1 {
-            return Err(Error::new(
-                base_error_class(),
-                format!("invalid header version: {}", header.metadata.version()),
-            ));
+            return Err(Lz4FlexError::base(format!(
+                "invalid header version: {}",
+                header.metadata.version()
+            )));
         }
 
         Ok((header, rest))

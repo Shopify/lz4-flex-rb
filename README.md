@@ -6,15 +6,15 @@
 `lz4-flex-rb` is a modern LZ4 compression library for Ruby, leveraging the
 power of the [`lz4_flex`](https://github.com/PSeitz/lz4_flex) Rust crate. This
 library provides a pure Rust implementation of the LZ4 algorithm, ensuring high
-performance and safety. One of the standout features of `lz4_flex-rb` is its
-ability to conditionally unlock the Global VM Lock (GVL) for threaded web
-servers, enhancing concurrency and performance in multi-threaded environments.
+performance and safety. Native Ruby bindings are generated with BoltFFI and run
+synchronously while holding the Global VM Lock (GVL), avoiding unsafe Ruby string
+pinning while preserving the public API.
 
 ## How to install this library
 
 ### Requirements
-- Ruby 3.0 or higher
-- Rust (for building the native extension)
+- Ruby 3.1 or higher
+- Rust (for building the native extension from the source gem)
 
 ### Setup
 Add this line to your application's Gemfile:

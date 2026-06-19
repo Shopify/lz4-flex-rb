@@ -1,0 +1,9 @@
+[package]
+name = "lz4_flex"
+crate = "lz4_flex_ext"
+
+[targets.ruby]
+enabled = true
+output = "dist/ruby"
+gem_name = "lz4_flex"
+ractor_safe = true
