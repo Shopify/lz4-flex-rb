@@ -1,2 +1,7 @@
 inherit_gem:
   rubocop-shopify: rubocop.yml
+
+AllCops:
+  Exclude:
+    - "ext/lz4_flex_ext/extconf.rb"
+    - "lib/lz4_flex_ext.rb"
