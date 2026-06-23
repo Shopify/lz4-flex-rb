@@ -8,6 +8,7 @@
 
 typedef struct { const uint8_t *ptr; uintptr_t len; } FfiString;
 typedef struct { const uint8_t *ptr; uintptr_t len; } FfiBytes;
+typedef struct { uint8_t *ptr; uintptr_t len; } FfiBytesMut;
 typedef struct { uint8_t *ptr; uintptr_t len; uintptr_t cap; uintptr_t align; } FfiBuf;
 extern void boltffi_free_buf(FfiBuf);
 
@@ -16,6 +17,10 @@ static inline FfiString bolt_rb_to_ffi_string(VALUE v) {
 }
 static inline FfiBytes bolt_rb_to_ffi_bytes(VALUE v) {
     FfiBytes b; b.ptr = (const uint8_t*)RSTRING_PTR(v); b.len = (uintptr_t)RSTRING_LEN(v); return b;
+}
+static inline FfiBytesMut bolt_rb_to_ffi_bytes_mut(VALUE v) {
+    rb_str_modify(v);
+    FfiBytesMut b; b.ptr = (uint8_t*)RSTRING_PTR(v); b.len = (uintptr_t)RSTRING_LEN(v); return b;
 }
 
 static inline int bolt_rb_to_ffi_bool(VALUE v) {
@@ -47,8 +52,13 @@ static const rb_data_type_t boltffi_ruby_var_int_type = {
 
 extern FfiBuf boltffi_compress(FfiBytes, uint8_t);
 extern FfiBuf boltffi_decompress(FfiBytes);
+extern uint32_t boltffi_max_compressed_size(uint32_t);
+extern uint32_t boltffi_compress_into(FfiBytes, uint8_t, FfiBytesMut);
+extern uint32_t boltffi_decompress_into(FfiBytes, FfiBytesMut);
+extern uint32_t boltffi_decompress_payload_into(FfiBytes, uint32_t, uint32_t, FfiBytesMut);
 extern uint8_t boltffi_get_compressed_encoding(FfiBytes);
 extern uint32_t boltffi_get_decompressed_size(FfiBytes);
+extern uint64_t boltffi_get_decompression_metadata(FfiBytes);
 
 
 extern FfiBuf boltffi_var_int_compress(FfiBytes);
@@ -105,6 +115,32 @@ static VALUE boltffi_ruby_decompress(VALUE self, VALUE boltffi_ruby_input) {
       return _rb_ret; }
 
 }
+static VALUE boltffi_ruby_max_compressed_size(VALUE self, VALUE boltffi_ruby_input_len) {
+    uint32_t _ffi_ret = boltffi_max_compressed_size(NUM2UINT(boltffi_ruby_input_len));
+    return rb_uint2inum((uintptr_t)_ffi_ret);
+
+}
+static VALUE boltffi_ruby_compress_into(VALUE self, VALUE boltffi_ruby_input, VALUE boltffi_ruby_encoding_val, VALUE boltffi_ruby_output) {
+    Check_Type(boltffi_ruby_input, T_STRING);
+    Check_Type(boltffi_ruby_output, T_STRING);
+    uint32_t _ffi_ret = boltffi_compress_into(bolt_rb_to_ffi_bytes(boltffi_ruby_input), NUM2UINT(boltffi_ruby_encoding_val), bolt_rb_to_ffi_bytes_mut(boltffi_ruby_output));
+    return rb_uint2inum((uintptr_t)_ffi_ret);
+
+}
+static VALUE boltffi_ruby_decompress_into(VALUE self, VALUE boltffi_ruby_input, VALUE boltffi_ruby_output) {
+    Check_Type(boltffi_ruby_input, T_STRING);
+    Check_Type(boltffi_ruby_output, T_STRING);
+    uint32_t _ffi_ret = boltffi_decompress_into(bolt_rb_to_ffi_bytes(boltffi_ruby_input), bolt_rb_to_ffi_bytes_mut(boltffi_ruby_output));
+    return rb_uint2inum((uintptr_t)_ffi_ret);
+
+}
+static VALUE boltffi_ruby_decompress_payload_into(VALUE self, VALUE boltffi_ruby_input, VALUE boltffi_ruby_data_offset, VALUE boltffi_ruby_expected_size, VALUE boltffi_ruby_output) {
+    Check_Type(boltffi_ruby_input, T_STRING);
+    Check_Type(boltffi_ruby_output, T_STRING);
+    uint32_t _ffi_ret = boltffi_decompress_payload_into(bolt_rb_to_ffi_bytes(boltffi_ruby_input), NUM2UINT(boltffi_ruby_data_offset), NUM2UINT(boltffi_ruby_expected_size), bolt_rb_to_ffi_bytes_mut(boltffi_ruby_output));
+    return rb_uint2inum((uintptr_t)_ffi_ret);
+
+}
 static VALUE boltffi_ruby_get_compressed_encoding(VALUE self, VALUE boltffi_ruby_input) {
     Check_Type(boltffi_ruby_input, T_STRING);
     uint8_t _ffi_ret = boltffi_get_compressed_encoding(bolt_rb_to_ffi_bytes(boltffi_ruby_input));
@@ -114,6 +150,12 @@ static VALUE boltffi_ruby_get_compressed_encoding(VALUE self, VALUE boltffi_ruby
 static VALUE boltffi_ruby_get_decompressed_size(VALUE self, VALUE boltffi_ruby_input) {
     Check_Type(boltffi_ruby_input, T_STRING);
     uint32_t _ffi_ret = boltffi_get_decompressed_size(bolt_rb_to_ffi_bytes(boltffi_ruby_input));
+    return rb_uint2inum((uintptr_t)_ffi_ret);
+
+}
+static VALUE boltffi_ruby_get_decompression_metadata(VALUE self, VALUE boltffi_ruby_input) {
+    Check_Type(boltffi_ruby_input, T_STRING);
+    uint64_t _ffi_ret = boltffi_get_decompression_metadata(bolt_rb_to_ffi_bytes(boltffi_ruby_input));
     return rb_uint2inum((uintptr_t)_ffi_ret);
 
 }
@@ -134,7 +176,12 @@ void Init_lz4_flex_ext_native(void) {
 
     rb_define_module_function(native, "compress", boltffi_ruby_compress, 2);
     rb_define_module_function(native, "decompress", boltffi_ruby_decompress, 1);
+    rb_define_module_function(native, "max_compressed_size", boltffi_ruby_max_compressed_size, 1);
+    rb_define_module_function(native, "compress_into", boltffi_ruby_compress_into, 3);
+    rb_define_module_function(native, "decompress_into", boltffi_ruby_decompress_into, 2);
+    rb_define_module_function(native, "decompress_payload_into", boltffi_ruby_decompress_payload_into, 4);
     rb_define_module_function(native, "get_compressed_encoding", boltffi_ruby_get_compressed_encoding, 1);
     rb_define_module_function(native, "get_decompressed_size", boltffi_ruby_get_decompressed_size, 1);
+    rb_define_module_function(native, "get_decompression_metadata", boltffi_ruby_get_decompression_metadata, 1);
 
 }

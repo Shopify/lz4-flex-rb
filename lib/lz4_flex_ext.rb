@@ -29,11 +29,31 @@ module Lz4FlexExt
     Native.decompress(input)
   end
 
+  module_function def max_compressed_size(input_len)
+    Native.max_compressed_size(input_len)
+  end
+
+  module_function def compress_into(input, encoding_val, output)
+    Native.compress_into(input, encoding_val, output)
+  end
+
+  module_function def decompress_into(input, output)
+    Native.decompress_into(input, output)
+  end
+
+  module_function def decompress_payload_into(input, data_offset, expected_size, output)
+    Native.decompress_payload_into(input, data_offset, expected_size, output)
+  end
+
   module_function def get_compressed_encoding(input)
     Native.get_compressed_encoding(input)
   end
 
   module_function def get_decompressed_size(input)
     Native.get_decompressed_size(input)
+  end
+
+  module_function def get_decompression_metadata(input)
+    Native.get_decompression_metadata(input)
   end
 end

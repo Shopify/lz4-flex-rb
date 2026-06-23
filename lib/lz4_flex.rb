@@ -15,11 +15,11 @@ module Lz4Flex
     Encoding::US_ASCII => Lz4FlexExt::Encoding::US_ASCII,
   }.freeze
 
-  ID_TO_ENCODING = {
-    Lz4FlexExt::Encoding::UTF8 => Encoding::UTF_8,
-    Lz4FlexExt::Encoding::BINARY => Encoding::BINARY,
-    Lz4FlexExt::Encoding::US_ASCII => Encoding::US_ASCII,
-  }.freeze
+  ID_TO_ENCODING = [
+    Encoding::UTF_8,
+    Encoding::BINARY,
+    Encoding::US_ASCII,
+  ].freeze
 
   extend self
 
@@ -36,18 +36,26 @@ module Lz4Flex
   end
 
   def decompress(input)
-    encoding_id = Lz4FlexExt.get_compressed_encoding(input)
-    encoding = ID_TO_ENCODING[encoding_id]
+    metadata = Lz4FlexExt.get_decompression_metadata(input)
+    raise DecodeError, "failed to deserialize header" if metadata == 0xffffffffffffffff
+
+    encoding = ID_TO_ENCODING[metadata >> 56]
     raise DecodeError, "failed to deserialize header" unless encoding
 
-    expected_size = Lz4FlexExt.get_decompressed_size(input)
-    raise DecodeError, "failed to deserialize header" if expected_size == 0xffffffff
+    data_offset = (metadata >> 32) & 0x00ffffff
+    expected_size = metadata & 0xffffffff
 
-    Lz4FlexExt.decompress(input).tap do |output|
-      raise DecodeError, "failed to decompress block" if output.empty? && expected_size.positive?
-
-      output.force_encoding(encoding)
+    output = if input.bytesize >= expected_size
+      input.byteslice(0, expected_size)
+    else
+      "\0".b * expected_size
     end
+    written = Lz4FlexExt.decompress_payload_into(input, data_offset, expected_size, output)
+    raise DecodeError, "failed to decompress block" if written == 0xffffffff
+    raise DecodeError, "unexpected decompressed size" if written != expected_size
+
+    output.force_encoding(encoding)
+    output
   rescue DecodeError
     raise
   rescue StandardError => e
